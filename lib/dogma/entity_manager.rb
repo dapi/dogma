@@ -46,5 +46,19 @@ module Dogma
       clear
       @closed = true
     end
+
+    # Creates a native SQL query.
+    #
+    # Return NativeQuery::
+    #
+    def create_native_query sql, rsm
+      query = NativeQuery.new self
+      query.sql = sql
+      query.rsm = rsm
+
+      return query
+    end
+
+
   end
 end
