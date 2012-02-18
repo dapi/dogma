@@ -22,7 +22,6 @@ class Dogma::AbstractQuery
   # Very simple object hydrator (optimized for performance).
   HYDRATE_SIMPLEOBJECT = 5
 
-  attr_accessor :rsm    # ResultSetMapping
   attr_accessor :params # The parameter map of this query
   attr_accessor :paramTypes   # The parameter type map of this query
   attr_accessor :rsm    # ResultSetMapping The user-specified ResultSetMapping to use
@@ -39,67 +38,43 @@ class Dogma::AbstractQuery
     self.paramTypes = {}
   end
 
-    #/**
-     #* Frees the resources used by the query object.
-     #*
-     #* Resets Parameters, Parameter Types and Query Hints.
-     #*
-     #* @return void
-     #*/
-    #public function free()
-    #{
-        #$this->_params = array();
-        #$this->_paramTypes = array();
-        #$this->_hints = array();
-    #}
+  # Frees the resources used by the query object.
+  #
+  # Resets Parameters, Parameter Types and Query Hints.
+  def free
+    self.params = []
+    self.paramTypes = []
+    self.hints = []
+  end
 
-    #/**
-     #* Sets a query parameter.
-     #*
-     #* @param string|integer $key The parameter position or name.
-     #* @param mixed $value The parameter value.
-     #* @param string $type The parameter type. If specified, the given value will be run through
-     #*                     the type conversion of this type. This is usually not needed for
-     #*                     strings and numeric types.
-     #* @return Doctrine\ORM\AbstractQuery This query instance.
-     #*/
-    #public function setParameter($key, $value, $type = null)
-    #{
-        #$key = trim($key, ':');
-        
-        #if ($type === null) {
-            #$type = Query\ParameterTypeInferer::inferType($value);
-        #}
-        
-        #$this->_paramTypes[$key] = $type;
-        #$this->_params[$key] = $value;
-        
-        #return $this;
-    #}
+  #* Sets a query parameter.
+  #*
+  #* @param string|integer $key The parameter position or name.
+  #* @param mixed $value The parameter value.
+  #* @param string $type The parameter type. If specified, the given value will be run through
+  #*                     the type conversion of this type. This is usually not needed for
+  #*                     strings and numeric types.
+  def setParameter key, value, type = nil
+    #$key = trim($key, ':');
+    paramTypes[key] = type || Query::ParameterTypeInferer::inferType( value )
+    params[key] = value
 
-    #/**
-     #* Sets a collection of query parameters.
-     #*
-     #* @param array $params
-     #* @param array $types
-     #* @return Doctrine\ORM\AbstractQuery This query instance.
-     #*/
-    #public function setParameters(array $params, array $types = array())
-    #{
-        #foreach ($params as $key => $value) {
-            #if (isset($types[$key])) {
-                #$this->setParameter($key, $value, $types[$key]);
-            #} else {
-                #$this->setParameter($key, $value);
-            #}
-        #}
-        #return $this;
-    #}
+    return self
+  end
 
-    #/**
-     #* Defines a cache driver to be used for caching result sets and implictly enables caching.
-     #*
-     #* @param Doctrine\Common\Cache\Cache $driver Cache driver
+  # Sets a collection of query parameters.
+  #
+  def setParameters new_params, new_paramTypes = {}
+    new_params.each_pair do |key, value|
+      setParameter key, value, new_paramTypes[key]
+    end
+
+    return self
+  end
+
+  #* Defines a cache driver to be used for caching result sets and implictly enables caching.
+  #*
+  #* @param Doctrine\Common\Cache\Cache $driver Cache driver
      #* @return Doctrine\ORM\AbstractQuery
      #*/
     #public function setResultCacheDriver($resultCacheDriver = null)
@@ -200,25 +175,20 @@ class Dogma::AbstractQuery
      #* @return boolean
      #*/
 
-    #/**
-     #* Change the default fetch mode of an association for this query.
-     #*
-     #* $fetchMode can be one of ClassMetadata::FETCH_EAGER or ClassMetadata::FETCH_LAZY
-     #*
-     #* @param  string $class
-     #* @param  string $assocName
-     #* @param  int $fetchMode
-     #* @return AbstractQuery
-     #*/
-    #public function setFetchMode($class, $assocName, $fetchMode)
-    #{
-        #if ($fetchMode !== Mapping\ClassMetadata::FETCH_EAGER) {
-            #$fetchMode = Mapping\ClassMetadata::FETCH_LAZY;
-        #}
+  # Change the default fetch mode of an association for this query.
+  #
+  # fetchMode can be one of ClassMetadata::FETCH_EAGER or ClassMetadata::FETCH_LAZY
+  #*
+  #* @param  string $class
+  #* @param  string $assocName
+  #* @param  int $fetchMode
+  #* @return AbstractQuery
+  def setFetchMode klass, assocName, fetchMode
+    fetchMode = Mapping::ClassMetadata::FETCH_LAZY unless fetchMode == Mapping::ClassMetadata::FETCH_EAGER
+    hints[:fetchMode][klass][assocName] = fetchMode
 
-        #$this->_hints['fetchMode'][$class][$assocName] = $fetchMode;
-        #return $this;
-    #}
+    return self
+  end
 
   # Gets the list of results for the query.
   #
@@ -354,15 +324,15 @@ class Dogma::AbstractQuery
     end
   end
 
-    #/**
-     #* Set the result cache id to use to store the result set cache entry.
-     #* If this is not explicitely set by the developer then a hash is automatically
-     #* generated for you.
-     #*
-     #* @param string $id
-     #* @return Doctrine\ORM\AbstractQuery This query instance.
-     #*/
-    #public function setResultCacheId($id)
+  #/**
+  #* Set the result cache id to use to store the result set cache entry.
+  #* If this is not explicitely set by the developer then a hash is automatically
+  #* generated for you.
+  #*
+  #* @param string $id
+  #* @return Doctrine\ORM\AbstractQuery This query instance.
+  #*/
+  #public function setResultCacheId($id)
     #{
         #if ($this->_queryCacheProfile) {
             #$this->_queryCacheProfile = $this->_queryCacheProfile->setCacheKey($id);
